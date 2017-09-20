@@ -1,0 +1,15 @@
+{
+  "name": "trance",
+  "version": "1.0.0",
+  "description": "backup cloud system for Luke",
+  "main": "core.js",
+  "dependencies": {
+    "pg": "^7.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Luke Boudreau",
+  "license": "UNLICENSED"
+}
