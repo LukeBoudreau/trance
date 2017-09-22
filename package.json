@@ -4,6 +4,7 @@
   "description": "backup cloud system for Luke",
   "main": "core.js",
   "dependencies": {
+    "async": "^2.5.0",
     "pg": "^7.1.0"
   },
   "devDependencies": {},

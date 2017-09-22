@@ -27,12 +27,40 @@ clientManager.on('addConnection', function(connection){
 	console.log('[+] Connection added to queue');
 });
 
+var getHeaderIndices = function(firstByte,headerSize,headerOffset,chunkLength,totalBytes){
+	var indices = {
+		start : 0,
+		end : 0
+	};
+	//Calculate start index
+	if(firstByte){
+		indices.start = headerOffset;
+	} else if( totalBytes > (headerSize+headerOffset) ){
+		return null;
+	} else {
+		indices.start = 0;
+	}
+	//Calculate end index
+	var totalBytesArrived = totalBytes + chunkLength;
+	if( totalBytesArrived > (headerSize+headerOffset) ){
+		// There is some binary data
+		const JSON_end = ( headerSize - totalBytes ) + headerOffset;
+		indices.end = JSON_end;
+	} else if( firstByte && chunkLength == headerOffset){
+		return null;
+	} else {
+		indices.end = chunkLength;
+	}
+	return indices;
+};
+
 clientManager.on('processConnection', function(){
 	conn = this.connections.pop();
 	console.log('[+] Processing Connection');
 	var JSONbuf = Buffer.alloc(1000000); //1MB of buffer for header
 	var totalBytes = 0;
 	var headerSize = 0;
+	var totalHeaderBytes = 0;
 	const headerOffset = 4;
 	const fileOptions = {
 		flags: 'w',
@@ -52,35 +80,39 @@ clientManager.on('processConnection', function(){
 	conn.write(ack);
 
 	conn.on('data', (chunk) => {
+		//console.log( 'Chunk Size %d', chunk.length );
 		// This is only run once
 		// First chunk contains size of header and likely a portion of the metadata
 		if( totalBytes == 0) {
 			headerSize = chunk.readUInt32BE(0);
-			if( chunk.length > headerOffset ){
-				JSONbuf.write( chunk.slice(headerOffset,headerSize+headerOffset).toString() );
-				if( chunk.length > headerSize ){
-					//Packet contains binary data in addition to header
-					//fileHash.update( chunk.slice(headerSize+2,chunk.length) );
-					fileHandle.write( chunk.slice(headerSize+headerOffset,chunk.length).toString('binary') );
-				};
-			};
+			i = getHeaderIndices(true,headerSize,headerOffset,chunk.length,totalBytes);
+			if(i){
+				JSONbuf.write( chunk.slice(i.start,i.end).toString() );
+				totalHeaderBytes += (i.end - i.start);
+			}
 			totalBytes += chunk.length;
+			//console.log( i );
+			//console.log('Total HeaderBytes %d',totalHeaderBytes);
 			return;
 			
 		};
-	
-		if( totalBytes > headerSize ){
-			//fileHash.update( chunk );
+		
+		i = getHeaderIndices(false,headerSize,headerOffset,chunk.length,totalBytes);
+		if(!i){
 			fileHandle.write( chunk );
-		}else if( totalBytes + chunk.length > headerSize ){
-			const JSON_end = ( headerSize - totalBytes ) + headerOffset;
-			JSONbuf.write( chunk.slice( 0, JSON_end ).toString() );
-			//fileHash.update( chunk.slice( headerSize+2, chunk.length ) );
-			fileHandle.write( chunk.slice( headerSize+headerOffset, chunk.length ).toString('binary') );
+		} else if( i.end < chunk.length ) {
+			JSONbuf.write( chunk.slice(i.start,i.end).toString(), totalHeaderBytes );
+			totalHeaderBytes += (i.end - i.start);
+			fileHandle.write( chunk.slice( i.end, chunk.length ).toString('binary') );
 		} else {
-			// FIX THIS YOU ARE OVERWRITING THE JSON BUFFER
-			JSONbuf.write( chunk.toString('binary') );
-		};
+			JSONbuf.write( chunk.slice(i.start,i.end).toString(), totalHeaderBytes );
+			totalHeaderBytes += (i.end - i.start);
+		}
+		/*
+		console.log( i );	
+		console.log('Total HeaderBytes %d',totalHeaderBytes);
+		console.log('=========');
+		*/
 		totalBytes += chunk.length; //Always get byte length
 
 	});
@@ -93,7 +125,6 @@ clientManager.on('processConnection', function(){
 			console.log('[+] All Binary data has been flushed...');
 			console.log("[~] Total bytes: %d", totalBytes);
 			console.log('[+] Header Size: %d', headerSize);
-			console.log(JSONbuf.slice(0,8));
 			PostNetProcessor.emit('packetArrived', headerSize, JSONbuf.slice(0,headerSize), fullDummyPath );
 		});
 			
@@ -122,34 +153,8 @@ const checkerFunction = setInterval(function(){
 		clientManager.connectionsProcessing += 1;
 		clientManager.emit('processConnection');
 	}
-	console.log('[+] %d Connections in Queue', queueLength);
-	console.log('[+] %d Connections Processing', clientManager.connectionsProcessing);
+	//console.log('[+] %d Connections in Queue', queueLength);
+	//console.log('[+] %d Connections Processing', clientManager.connectionsProcessing);
 },1000);
-
-var getHeaderIndices = function(firstByte,headerSize,headerOffset,chunk,totalBytes){
-	var indices = {
-		start: 0
-		end: 0
-	};
-	//Calculate start index
-	if(firstByte){
-		indices.start = headerOffset;
-	} else if( totalBytes > (headerSize+headerOffset) ){
-		indices = null;
-		return indices;
-	} else {
-		indices.start = 0;
-	}
-	//Calculate end index
-	var totalBytesArrived = totalBytes + chunk.length;
-	if( totalBytesArrived > (headerSize+headerOffset) ){
-		// There is some binary data
-		const JSON_end = ( headerSize - totalBytes ) + headerOffset;
-		indices.end = JSON_end;
-	} else {
-		indices.end = chunk.length;
-	}
-	return indices;
-};
 
 module.exports = clientManager;
