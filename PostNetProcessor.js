@@ -14,12 +14,11 @@ class PostNetProcessor extends EventEmitter {};
 var postNetProcessor = new PostNetProcessor();
 var total = 0;
 
-postNetProcessor.on('packetArrived', function(headerSize,packetHeader,fullDummyPath,fileHash) {
+postNetProcessor.on('packetArrived', function(headerSize,packetHeader,fullDummyPath) {
 	console.log('[+] Data Packet has arrived in Full');
 	var metadataObj = JSON.parse(packetHeader);
 	//Add data to obj pointer as server data
 	metadataObj.serverData = {};
-	metadataObj.serverData.fileHash = fileHash;
 	//console.log( metadataObj );
 	total += 1;
 	/*
