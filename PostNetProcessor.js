@@ -64,6 +64,10 @@ postNetProcessor.on('packetArrived', function(headerSize,packetHeader,fullDummyP
 
 	}, function(err){
 		console.log('[+] Moved/renamed all files');
+		fs.unlink(fullDummyPath,function(err){
+			console.log('[+] Removed dummy File');
+		});
+		
 	});
 	
 });
