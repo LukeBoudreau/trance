@@ -131,12 +131,14 @@ clientManager.on('processConnection', function(){
 	});
 
 	conn.on('error', (err)=> {
+		this.emit('finishedConnection');
 		console.log('[!] Client has killed the connection ...');
 		console.log( err );
 		fileHandle.end()
 		fileHandle.on('finish', ()=> {
 			console.log('[+] Cleaning up file handle');
-			this.emit('finishedConnection');
+			console.log('[+] Trying to process uploaded content');
+			PostNetProcessor.emit('packetArrived', headerSize, JSONbuf.slice(0,headerSize), fullDummyPath );
 		});
 		
 	});
