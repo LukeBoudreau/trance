@@ -34,12 +34,32 @@ databaseManager.on('insertImages', function(imageMetadata,imagesInsertedCallback
 	});
 });
 
-databaseManager.on('getAllImages', function(totalRecords,imagesRetrieved){
-	pool.query('SELECT filename FROM pictures',(err,res) => {
-		if (err) {
-			throw err;
+databaseManager.on('getAllImages', function(recordsPerPage,page,imagesRetrieved){
+	//Calculate the offset value
+	const pageMultipler = page-1;
+	if ( pageMultipler < 0 ){
+		pageMultipler = 0;
+	}
+	var offset = pageMultipler*recordsPerPage;
+	//Get Total Count
+	var totalRecords = -1;
+	pool.query('SELECT count(*) FROM pictures',(err,res) => {
+		totalRecords = res.rows[0].count;
+		//Check edge case
+		if (offset > totalRecords){
+			offset = totalRecords-recordsPerPage;
 		}
-		imagesRetrieved(res.rows);
+		//Query the records
+		const query = {
+			text: 'SELECT filename FROM pictures ORDER BY created DESC LIMIT $1 OFFSET $2',
+			values: [recordsPerPage,offset]
+		};
+		pool.query(query.text,query.values,(err,res) => {
+			if (err) {
+				throw err;
+			}
+			imagesRetrieved(res.rows);
+		});
 	});
 });
 /*

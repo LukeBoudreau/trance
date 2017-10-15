@@ -30,13 +30,17 @@ server.listen(DPORT, ()=> {
 
 //=============================================================================
 // Front End API
+var url = require('url');
 var express = require('express');
 var app = express();
 var DatabaseManager = require('./DatabaseManager.js');
 
 app.get('/getAllImages', function(req,res){
 	res.writeHead(200, {'Content-Type':'application/json'});
-	DatabaseManager.emit('getAllImages',10,function(t){
+	var records = req.query.records;
+	var page = req.query.page;
+
+	DatabaseManager.emit('getAllImages',records,page,function(t){
 		msg = { imgNames : [] };
 		async.each(t,function(row,pushedImgName){
 			msg.imgNames.push(row.filename);
