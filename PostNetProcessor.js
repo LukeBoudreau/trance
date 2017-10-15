@@ -6,7 +6,7 @@ const Path = require('path');
 //NPM Packages
 const async = require('async');
 //Custom Modules
-const db = require('./database.js');
+const DatabaseManager = require('./DatabaseManager.js');
 
 //ENV Variables
 const STORAGE_IMG_PATH = process.env.STORAGE_IMG_PATH;
@@ -94,7 +94,9 @@ postNetProcessor.on('packetArrived', function(headerSize,packetHeader,fullDummyP
 		metadataObj.serverData.imagesReceived = imagesReceived;
 		console.log('[+] %d/%d images received',imagesReceived.length,metadataObj.images.length);
 		total += imagesReceived.length;
-		
+		DatabaseManager.emit('insertImages', metadataObj.serverData.imagesReceived, function(){
+			console.log('[+] images inserted into database');
+		});
 	});
 	
 });

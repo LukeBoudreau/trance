@@ -5,6 +5,7 @@
   "main": "core.js",
   "dependencies": {
     "async": "^2.5.0",
+    "express": "^4.16.2",
     "pg": "^7.1.0"
   },
   "devDependencies": {},
