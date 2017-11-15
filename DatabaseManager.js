@@ -36,18 +36,26 @@ databaseManager.on('insertImages', function(imageMetadata,imagesInsertedCallback
 
 databaseManager.on('getAllImages', function(recordsPerPage,page,imagesRetrieved){
 	//Calculate the offset value
-	const pageMultipler = page-1;
+	var pageMultipler = page-1;
 	if ( pageMultipler < 0 ){
 		pageMultipler = 0;
 	}
+	//TODO: TYPE & Value CHECKING on recordsPerPage!!
 	var offset = pageMultipler*recordsPerPage;
 	//Get Total Count
 	var totalRecords = -1;
 	pool.query('SELECT count(*) FROM pictures',(err,res) => {
 		totalRecords = res.rows[0].count;
-		//Check edge case
+		//Check edge case (Records passed the edge)
 		if (offset > totalRecords){
-			offset = totalRecords-recordsPerPage;
+			//offset = totalRecords-recordsPerPage;
+			// Manually Calculate the last page cause client is an idiot
+			//TODO: TYPE & Value CHECKING on recordsPerPage!!
+			var lastPage = parseInt(totalRecords / recordsPerPage);
+			if( totalRecords % recordsPerPage !== 0 ){
+				lastPage += 1;
+			}
+			offset = (lastPage-1)*recordsPerPage;
 		}
 		//Query the records
 		const query = {

@@ -5,6 +5,7 @@ const EventEmitter = require('events');
 const Path = require('path');
 //NPM Packages
 const async = require('async');
+const sharp = require('sharp');
 //Custom Modules
 const DatabaseManager = require('./DatabaseManager.js');
 
@@ -75,13 +76,17 @@ postNetProcessor.on('packetArrived', function(headerSize,packetHeader,fullDummyP
 			};
 			//console.log(' start: %d, end %d', readFileOptions.start, readFileOptions.end );
 			const rpipe = fs.createReadStream(fullDummyPath,readFileOptions);
-			const wpipe = fs.createWriteStream(STORAGE_IMG_PATH + '/' +  metadata.name,writeFileOptions);
+			const imageFname = STORAGE_IMG_PATH + '/' + metadata.name;
+			const wpipe = fs.createWriteStream(imageFname,writeFileOptions);
 
 			//pipe to write stream
 			rpipe.pipe(wpipe);
 			wpipe.on('finish', ()=>{
 				metadataObj.serverData.binaryStart += metadata.size;
 				imagesReceived.push(metadata);
+				//Create thumbnail for image
+				const thumbnail_wpipe = fs.createWriteStream( imageFname.slice(0,-4) + '-tmb.jpg');
+				sharp(imageFname).resize(300,200).pipe(thumbnail_wpipe);
 				filerenamed();
 			});
 		}
