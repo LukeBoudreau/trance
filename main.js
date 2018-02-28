@@ -52,4 +52,14 @@ app.get('/getAllImages', function(req,res){
 	});
 });
 
+app.get('/getLastImagePage', function(req,res){
+	res.writeHead(200, {'Content-Type':'application/json'});
+	var records = req.query.records;
+
+	DatabaseManager.emit('getLastImagePage',records,function(t){
+		msg = { lastPage : t };
+		res.end(JSON.stringify(msg));
+	});
+});
+
 app.listen(8080);

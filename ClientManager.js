@@ -16,6 +16,10 @@ const CONN_LIMIT = 5;
 WARNING!! This is hackiest nodeJS code I've written. 
 ===============================================================================
 */
+/*
+The ClientManager routes all connections to this, and performs application layer
+processing. 
+*/
 class ClientManager extends EventEmitter {};
 var clientManager = new ClientManager();
 
@@ -27,6 +31,9 @@ clientManager.on('addConnection', function(connection){
 	console.log('[+] Connection added to queue');
 });
 
+/*
+getHeaderIndices() -
+*/
 var getHeaderIndices = function(firstByte,headerSize,headerOffset,chunkLength,totalBytes){
 	var indices = {
 		start : 0,
@@ -56,7 +63,7 @@ var getHeaderIndices = function(firstByte,headerSize,headerOffset,chunkLength,to
 
 clientManager.on('processConnection', function(){
 	conn = this.connections.pop();
-	console.log('[+] Processing Connection');
+	console.log('[+] Receiving data from connection...');
 	var JSONbuf = Buffer.alloc(1000000); //1MB of buffer for header
 	var totalBytes = 0;
 	var headerSize = 0;
@@ -122,7 +129,7 @@ clientManager.on('processConnection', function(){
 		this.emit('finishedConnection');
 		fileHandle.end()
 		fileHandle.on('finish', ()=> {
-			console.log('[+] All Binary data has been flushed...');
+			console.log('[+] All Binary data has been received.');
 			console.log("[~] Total bytes: %d", totalBytes);
 			console.log('[+] Header Size: %d', headerSize);
 			PostNetProcessor.emit('packetArrived', headerSize, JSONbuf.slice(0,headerSize), fullDummyPath );

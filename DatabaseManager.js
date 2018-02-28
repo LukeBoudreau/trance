@@ -16,6 +16,7 @@ class DatabaseManager extends EventEmitter {};
 var databaseManager = new DatabaseManager();
 
 databaseManager.on('insertImages', function(imageMetadata,imagesInsertedCallback) {
+	//Create a bulk/batch insert
 	async.each(imageMetadata,function(metadataObj,insertedImageCallback){
 		const created = new Date(metadataObj.created);
 		//Construct Query
@@ -68,6 +69,20 @@ databaseManager.on('getAllImages', function(recordsPerPage,page,imagesRetrieved)
 			}
 			imagesRetrieved(res.rows);
 		});
+	});
+});
+
+databaseManager.on('getLastImagePage', function(recordsPerPage,maxPageCalculated){
+	if( !recordsPerPage ){
+		return maxPageCalculated(-1);
+	}
+	pool.query('SELECT count(*) FROM pictures',(err,res) => {
+		const totalRecords = res.rows[0].count;
+		var lastPage = parseInt(totalRecords / recordsPerPage);
+		if( totalRecords % recordsPerPage !== 0 ){
+			lastPage += 1;
+		}
+		maxPageCalculated(lastPage);
 	});
 });
 /*
